@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Snake Game Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    body {
+      background-color: #0d1117;
+      color: #c9d1d9;
+      font-family: 'Courier New', Courier, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      touch-action: none; /* Prevents zooming on mobile */
+    }
+
+    h1 { margin: 10px 0; font-size: 24px; }
+
+    /* Score Board */
+    .score-board {
+      display: flex;
+      gap: 20px;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .score-box {
+      background: #161b22;
+      padding: 5px 15px;
+      border-radius: 8px;
+      border: 1px solid #30363d;
+    }
+
+    /* Game Container */
+    #game-container {
+      position: relative;
+      border: 4px solid #58a6ff;
+      box-shadow: 0 0 20px rgba(88, 166, 255, 0.2);
+    }
+    canvas {
+      display: block;
+      background-color: #000;
+    }
+
+    /* Game Over Overlay */
+    #game-over {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: none; /* Hidden by default */
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+    #game-over h2 { margin: 0 0 20px 0; color: #ff4d4d; }
+    button {
+      background: #238636;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    button:hover { background: #2ea043; }
+
+    /* Mobile Controls */
+    .controls {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: 60px 60px 60px;
+      gap: 10px;
+    }
+    .btn {
+      width: 60px; height: 60px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 50%;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      cursor: pointer;
+    }
+    .btn:active { background: #30363d; }
+    
+    /* Layout for arrow keys */
+    .btn-up { grid-column: 2; }
+    .btn-left { grid-column: 1; }
+    .btn-down { grid-column: 2; }
+    .btn-right { grid-column: 3; }
+
+  </style>
+</head>
+<body>
+
+  <h1>Snake Pro</h1>
+
+  <div class="score-board">
+    <div class="score-box">Score: <span id="score">0</span></div>
+    <div class="score-box">High: <span id="highScore">0</span></div>
+  </div>
+
+  <div id="game-container">
+    <canvas width="400" height="400" id="game"></canvas>
+    
+    <div id="game-over">
+      <h2>GAME OVER</h2>
+      <button onclick="resetGame()">Play Again</button>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="btn btn-up" onclick="move('up')">▲</div>
+    <div class="btn btn-left" onclick="move('left')">◀</div>
+    <div class="btn btn-down" onclick="move('down')">▼</div>
+    <div class="btn btn-right" onclick="move('right')">▶</div>
+  </div>
+
+  <script>
+    var canvas = document.getElementById('game');
+    var context = canvas.getContext('2d');
+    var scoreEl = document.getElementById('score');
+    var highScoreEl = document.getElementById('highScore');
+    var gameOverEl = document.getElementById('game-over');
+
+    var grid = 16;
+    var count = 0;
+    var score = 0;
+    var highScore = localStorage.getItem('snakeHighScore') || 0;
+    var isGameOver = false;
+
+    highScoreEl.innerText = highScore;
+
+    var snake = {
+      x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4
+    };
+
+    var apple = { x: 320, y: 320 };
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    // Function to handle movement
+    function move(direction) {
+      if (direction === 'left' && snake.dx === 0) { snake.dx = -grid; snake.dy = 0; }
+      else if (direction === 'up' && snake.dy === 0) { snake.dy = -grid; snake.dx = 0; }
+      else if (direction === 'right' && snake.dx === 0) { snake.dx = grid; snake.dy = 0; }
+      else if (direction === 'down' && snake.dy === 0) { snake.dy = grid; snake.dx = 0; }
+    }
+
+    function resetGame() {
+      snake.x = 160;
+      snake.y = 160;
+      snake.cells = [];
+      snake.maxCells = 4;
+      snake.dx = grid;
+      snake.dy = 0;
+      score = 0;
+      scoreEl.innerText = score;
+      apple.x = getRandomInt(0, 25) * grid;
+      apple.y = getRandomInt(0, 25) * grid;
+      isGameOver = false;
+      gameOverEl.style.display = 'none';
+      requestAnimationFrame(loop);
+    }
+
+    function loop() {
+      if (isGameOver) return;
+
+      requestAnimationFrame(loop);
+
+      if (++count < 4) return;
+      count = 0;
+
+      context.clearRect(0,0,canvas.width,canvas.height);
+
+      snake.x += snake.dx;
+      snake.y += snake.dy;
+
+      // Wrap walls
+      if (snake.x < 0) snake.x = canvas.width - grid;
+      else if (snake.x >= canvas.width) snake.x = 0;
+      if (snake.y < 0) snake.y = canvas.height - grid;
+      else if (snake.y >= canvas.height) snake.y = 0;
+
+      snake.cells.unshift({x: snake.x, y: snake.y});
+      if (snake.cells.length > snake.maxCells) snake.cells.pop();
+
+      // Draw Apple
+      context.fillStyle = '#ff4d4d';
+      context.fillRect(apple.x, apple.y, grid-1, grid-1);
+
+      // Draw Snake
+      context.fillStyle = '#2ea043';
+      snake.cells.forEach(function(cell, index) {
+        context.fillRect(cell.x, cell.y, grid-1, grid-1);
+
+        if (cell.x === apple.x && cell.y === apple.y) {
+          snake.maxCells++;
+          score += 10;
+          scoreEl.innerText = score;
+          
+          if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('snakeHighScore', highScore);
+            highScoreEl.innerText = highScore;
+          }
+
+          apple.x = getRandomInt(0, 25) * grid;
+          apple.y = getRandomInt(0, 25) * grid;
+        }
+
+        for (var i = index + 1; i < snake.cells.length; i++) {
+          if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+            isGameOver = true;
+            gameOverEl.style.display = 'flex';
+          }
+        }
+      });
+    }
+
+    // Keyboard Controls
+    document.addEventListener('keydown', function(e) {
+      if (e.which === 37) move('left');
+      else if (e.which === 38) move('up');
+      else if (e.which === 39) move('right');
+      else if (e.which === 40) move('down');
+    });
+
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
